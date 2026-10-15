@@ -1644,3 +1644,41 @@ button, select { font: inherit; }
   .pal-row .scard { flex: 0 0 78%; scroll-snap-align: start; }
   .scard-body h3 { font-size: 19px; }
 }
+
+/* 한/영 토글 */
+.lang { margin-left: auto; display: inline-flex; border: 1px solid var(--line-2); border-radius: var(--radius-pill); overflow: hidden; flex: none; }
+.lang button { border: 0; background: none; color: var(--muted); font-size: 12px; font-weight: 600; padding: 5px 11px; cursor: pointer; letter-spacing: 0; }
+.lang button.is-on { background: var(--color-text-strong); color: var(--bg-0); }
+.sg-notice { margin: 10px 0 0; font-size: 13px; color: var(--warn); background: var(--warn-soft); padding: 8px 12px; border-radius: var(--radius-sm); }
+
+/* ── 학습서 틀: 단계 접힘 카드 · 확인 문제 · 배지 ── */
+.sg-body .g-b-ok { background: var(--success-soft); color: var(--success); }
+.sg-body .g-stage { border: 1px solid var(--line); border-radius: var(--radius-lg); margin: 10px 0; padding: 0; background: var(--bg-1); }
+.sg-body .g-stage > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 12px 14px 12px 38px; min-height: 48px; position: relative; }
+.sg-body .g-stage > summary::-webkit-details-marker { display: none; }
+.sg-body .g-stage > summary::before { content: '+'; position: absolute; left: 14px; top: 11px; font-weight: 700; font-size: 18px; line-height: 24px; color: var(--accent); }
+.sg-body .g-stage[open] > summary::before { content: '−'; }
+.sg-body .g-stage-t { font-weight: 700; color: var(--color-text-strong); }
+.sg-body .g-stage-s { flex-basis: 100%; color: var(--muted); font-size: .92em; }
+.sg-body .g-stage-b { padding: 0 14px 14px; }
+.sg-body .g-stage-b .g-tw { margin: 0 0 8px; }
+.sg-body .g-stage-b td.g-h { width: 5.5em; }
+.sg-body .g-qa { border: 1px solid var(--line); border-radius: var(--radius-lg); margin: 8px 0; padding: 0; background: var(--bg-1); }
+.sg-body .g-qa > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; list-style: none; min-height: 46px; }
+.sg-body .g-qa > summary::-webkit-details-marker { display: none; }
+.sg-body .g-qa > summary::before { content: 'Q. '; color: var(--accent); }
+.sg-body .g-qa > div { padding: 0 14px 14px; color: var(--txt); }
+.sg-body .g-qa > div::before { content: 'A. '; font-weight: 700; color: var(--success); }
+.sg-body .g-chapter > .g-key, .sg-body .g-chapter > .g-trap { margin-top: 12px; }
+.sg-body .g-cover + .g-chapter { margin-top: 20px; }
+
+/* 표: 글자 단위로 쪼개지지 않게(overflow-wrap: anywhere 는 최소 폭을 0으로 만든다) — 넘치면 가로로 민다 */
+.sg-body th, .sg-body td { overflow-wrap: break-word; word-break: keep-all; }
+.sg-body .g-tw { -webkit-overflow-scrolling: touch; }
+.sg-body .g-tw td, .sg-body .g-tw th { min-width: 4.5em; }
+.sg-body .g-tw td.g-h { min-width: 5em; }
+/* 영어 화면의 확대 안내 */
+html:lang(en) .sg-body figure:not(.g-hovfig) figcaption::after, html:lang(en) .sg-body .g-diagram::after { content: ' · Tap to enlarge'; }
+/* 첫 열은 짧은 라벨일 때만 한 줄 — 긴 라벨은 줄바꿈하고, 4열 이상 표는 최소 폭을 줘서 가로로 민다 */
+.sg-body td.g-h { white-space: normal; }
+.sg-body .g-tw table:has(th:nth-child(4)) { min-width: 560px; }

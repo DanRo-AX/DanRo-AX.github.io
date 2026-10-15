@@ -22,10 +22,11 @@
 <header class="top">
   <a class="brand" href="#/" aria-label="Raw Cut IX 홈">Raw Cut IX</a>
   <nav class="top-nav" id="topnav"></nav>
+  <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ko">KO</button><button type="button" data-lang="en">EN</button></div>
 </header>
 <main id="app" class="app"></main>
 <div id="zoom" class="zoom" hidden>
-  <div class="zoom-bar"><span>그림 크게 보기 · 옆으로 밀어서 봐요</span><button type="button" class="sg-btn" id="zoom-close">닫기</button></div>
+  <div class="zoom-bar"><span id="zoom-bar-t">그림 크게 보기 · 옆으로 밀어서 봐요</span><button type="button" class="sg-btn" id="zoom-close">닫기</button></div>
   <div class="zoom-body sg-body"><figure id="zoom-fig"></figure></div>
 </div>
 <script type="module" src="app.js"></script>

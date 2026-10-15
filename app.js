@@ -7,6 +7,50 @@ import { BOOKS, CATEGORIES, DUMMIES } from './books/index.js';
 import { cardGradient, cardTexture } from './cardArt.js';
 
 const app = document.getElementById('app');
+/* ── 한/영 ── 화면 문구는 사전, 책 본문은 책 파일의 sections(ko) / sectionsEn(en). 선택은 localStorage 에 저장. */
+const UI = {
+  ko: {
+    intro: '<b>처음 배우는 사람의 눈높이</b>로 다시 쓴 개인 공부 서재예요. 정의와 이유, 동작 원리, 실패 케이스, 코드와 AI에게 시키는 법까지 한 틀로 정리해요.',
+    all: '전체 글', allEn: 'All Stories', soon: '준비 중', soonBody: '아직 쓰는 중인 책이에요.', back: '목록으로 돌아가기', more: '다음 시리즈', moreBlurb: '곧 채울 자리예요.',
+    reads: '읽을거리', ep: n => `${n}편`, min: n => `${n}분`, fail: '불러오지 못했어요. 새로고침해 주세요.',
+    swap: '책 바꾸기', fontSize: '글자 크기', fontSm: '글자 작게', fontLg: '글자 크게', toc: '장 목록', first: '처음', last: '끝',
+    tabRead: '본문', tabCards: '암기 카드', tabQuiz: '문제', subAll: '전체', sub12: '1·2과목', sub3: '3과목',
+    shuffle: '섞기', hideDone: '외운 카드 숨기기', learned: (a, b) => `외운 카드 ${a} / ${b}`, allDone: '다 외웠어요. 「외운 카드 숨기기」를 끄면 다시 볼 수 있어요.',
+    no: n => `${n}번`, memo: '외움', tapAnswer: '눌러서 답 보기 · 옆으로 밀어 넘기기', ans: '답', prev: '← 이전', next: '다음 →', again: '다시 볼래요', gotIt: '외웠어요',
+    restart: '처음부터', solved: (a, b, c) => `${a} / ${b} 풀었어요 · 맞힌 문제 ${c}`, correct: '정답이에요', answerIs: m => `정답은 ${m}`,
+    zoomBar: '그림 크게 보기 · 옆으로 밀어서 봐요', close: '닫기', noEn: 'English version of this book is not available yet — showing Korean.',
+    chip: { adsp: '' },
+  },
+  en: {
+    intro: 'A personal study library written for <b>people starting from zero</b> — definition, why it matters, how it works, failure cases, code, and how to prompt an AI, all in one consistent frame.',
+    all: 'All Stories', allEn: 'All Stories', soon: 'Coming soon', soonBody: 'This book is still being written.', back: 'Back to the list', more: 'Next series', moreBlurb: 'A slot to fill soon.',
+    reads: 'More reading', ep: n => `Part ${n}`, min: n => `${n} min read`, fail: 'Failed to load. Please refresh.',
+    swap: 'Switch book', fontSize: 'Text size', fontSm: 'Smaller text', fontLg: 'Larger text', toc: 'Chapters', first: 'Start', last: 'End',
+    tabRead: 'Read', tabCards: 'Flashcards', tabQuiz: 'Quiz', subAll: 'All', sub12: 'Subjects 1–2', sub3: 'Subject 3',
+    shuffle: 'Shuffle', hideDone: 'Hide learned', learned: (a, b) => `Learned ${a} / ${b}`, allDone: 'All learned. Turn off “Hide learned” to review again.',
+    no: n => `#${n}`, memo: 'learned', tapAnswer: 'Tap to reveal · swipe to move', ans: 'Answer', prev: '← Prev', next: 'Next →', again: 'Review again', gotIt: 'Got it',
+    restart: 'Restart', solved: (a, b, c) => `${a} / ${b} solved · ${c} correct`, correct: 'Correct', answerIs: m => `Answer: ${m}`,
+    zoomBar: 'Figure view · swipe sideways', close: 'Close', noEn: 'English version of this book is not available yet — showing Korean.',
+  },
+};
+let LANG = (() => { try { return localStorage.getItem('study-lang') === 'en' ? 'en' : 'ko'; } catch { return 'ko'; } })();
+const U = k => UI[LANG][k] ?? UI.ko[k];
+const bt = o => (LANG === 'en' && o.en ? o.en.title : o.title);
+const bb = o => (LANG === 'en' && o.en ? o.en.blurb : o.blurb);
+const cl = c => (LANG === 'en' ? c.label : c.ko);
+const secsOf = d => (LANG === 'en' && d.sectionsEn && d.sectionsEn.length ? d.sectionsEn : d.sections);
+function setLang(l) {
+  LANG = l;
+  try { localStorage.setItem('study-lang', l); } catch { /* 저장 불가 환경 */ }
+  document.documentElement.lang = l;
+  syncChrome();
+  route();
+}
+function syncChrome() {
+  document.querySelectorAll('[data-lang]').forEach(b => { b.classList.toggle('is-on', b.dataset.lang === LANG); b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)); });
+  document.getElementById('zoom-bar-t').textContent = U('zoomBar');
+  document.getElementById('zoom-close').textContent = U('close');
+}
 const cache = {};
 const loadBook = async id => (cache[id] ||= await BOOKS.find(b => b.id === id).load());
 const ls = {
@@ -42,12 +86,12 @@ async function renderHome() {
   const feat = books[0];
   app.innerHTML = `
   <section class="home">
-    <div class="home-art" aria-hidden="true">${thumb(firstSvg(feat.data.sections.map(s => s.html).join('')))}</div>
+    <div class="home-art" aria-hidden="true">${thumb(firstSvg(secsOf(feat.data).map(s => s.html).join('')))}</div>
     <div class="home-side">
-      <p class="home-intro">Raw Cut IX는 데이터와 인프라를 <b>처음 배우는 사람의 눈높이</b>로 다시 쓴 개인 공부 서재예요. 구조를 그림으로 먼저 보고, 왜 필요한지 이해한 다음, 코드와 AI에게 시키는 법으로 넘어가요.</p>
+      <p class="home-intro">Raw Cut IX — ${U('intro')}</p>
       <ul class="cat-list">
-        ${CATEGORIES.map(c => `<li><a href="#/c/${c.id}"><span>${c.label}<small>${c.ko}</small></span><span aria-hidden="true">→</span></a></li>`).join('')}
-        <li><a href="#/c/all"><span>All Stories<small>전체 글</small></span><span aria-hidden="true">→</span></a></li>
+        ${CATEGORIES.map(c => `<li><a href="#/c/${c.id}"><span>${c.label}<small>${cl(c)}</small></span><span aria-hidden="true">→</span></a></li>`).join('')}
+        <li><a href="#/c/all"><span>All Stories<small>${U('all')}</small></span><span aria-hidden="true">→</span></a></li>
       </ul>
     </div>
   </section>
@@ -62,7 +106,7 @@ function thumb(svg) {
 }
 function storyCard(b) {
   const c = catOf(b.cat);
-  const first = b.data.sections.find(s => /<svg/.test(s.html));
+  const first = secsOf(b.data).find(s => /<svg/.test(s.html));
   return `<a class="story" href="#/b/${b.id}">
     ${thumb(first ? firstSvg(first.html) : '')}
     <span class="story-cat">${c.label}</span>
@@ -86,7 +130,7 @@ function chapterCard(b, s, i) {
    · 아래 목록형 섹션(간격 161) · 콘텐츠 폭 1192 */
 /* 카드 — ~/repos/ax-blog(Raw Cut) 의 scard 그대로: 1.9:1 직각 그림(제목 해시 그라데이션 + 결) · 큰 키워드 · 분류 칩 · 세리프 제목 · 메타 */
 function scard({ href, seed, kw, chip, title, meta, dummy }) {
-  return `<article class="scard${dummy ? ' is-dummy' : ''}"><a href="${href}" aria-label="${esc(title)} 읽기">
+  return `<article class="scard${dummy ? ' is-dummy' : ''}"><a href="${href}" aria-label="${esc(title)}">
     <div class="scard-art" aria-hidden="true">
       <div class="scard-media" style="background: ${cardGradient(seed, 'deep')};"><div class="scard-tex" style="background-image: ${cardTexture(seed)};"></div>
       <span class="scard-kw">${esc(kw)}</span></div>
@@ -95,9 +139,9 @@ function scard({ href, seed, kw, chip, title, meta, dummy }) {
     <div class="scard-body"><h3>${esc(title)}</h3><span class="scard-meta">${esc(meta)}</span></div>
   </a></article>`;
 }
-const dummyCard = d => scard({ href: `#/soon/${d.id}`, seed: d.title, kw: d.kw || d.title, chip: catOf(d.cat)?.label || 'Coming soon', title: d.title, meta: '준비 중', dummy: true });
-const bookCard = b => scard({ href: `#/b/${b.id}`, seed: b.title, kw: b.kw, chip: catOf(b.cat).label, title: b.title, meta: `${catOf(b.cat).label} · ${b.date} · ${b.minutes}분` });
-const chapterPcard = (b, s) => scard({ href: `#/b/${b.id}?c=${s.id}`, seed: `${b.id}:${s.title}`, kw: s.title.split(/ — |, /)[0], chip: s.part, title: s.title, meta: `${b.kw} · ${s.sub}` });
+const dummyCard = d => scard({ href: `#/soon/${d.id}`, seed: d.title, kw: d.kw || bt(d), chip: catOf(d.cat)?.label || 'Coming soon', title: bt(d), meta: U('soon'), dummy: true });
+const bookCard = b => scard({ href: `#/b/${b.id}`, seed: b.title, kw: b.kw, chip: catOf(b.cat).label, title: bt(b), meta: `${catOf(b.cat).label} · ${b.date} · ${U('min')(b.minutes)}` });
+const chapterPcard = (b, s) => scard({ href: `#/b/${b.id}?c=${s.id}`, seed: `${b.id}:${s.id}`, kw: s.title.split(/ — |, /)[0], chip: s.part, title: s.title, meta: `${b.kw} · ${s.sub}` });
 const pad3 = (items, fill) => [...items, ...fill].slice(0, 3);
 
 async function renderCategory(catId) {
@@ -109,17 +153,17 @@ async function renderCategory(catId) {
   const books = await Promise.all(list.map(async b => ({ ...b, data: await loadBook(b.id) })));
   const dummies = DUMMIES.filter(d => catId === 'all' || d.cat === catId);
   const latest = pad3(books.map(bookCard), dummies.map(dummyCard));
-  const series = books.map(b => ({ title: `Series: ${b.title}`, cards: b.data.sections.slice(0, 3).map(s => chapterPcard(b, s)) }));
+  const series = books.map(b => ({ title: `Series: ${bt(b)}`, cards: secsOf(b.data).slice(0, 3).map(s => chapterPcard(b, s)) }));
   // 시리즈가 모자라면 더미 시리즈로 카드 섹션 수를 원본과 같게(Latest + 5)
-  const dummySeries = dummies.map(d => ({ title: `Series: ${d.title}`, cards: [dummyCard(d), dummyCard({ ...d, title: `${d.title} — 2편` }), dummyCard({ ...d, title: `${d.title} — 3편` })] }));
-  const filler = n => Array.from({ length: n }, (_, i) => ({ id: `more-${i}`, cat: catId, title: `다음 시리즈 ${i + 1}`, blurb: '곧 채울 자리예요.' }));
-  const rows = [...series, ...dummySeries, ...filler(5).map(d => ({ title: `Series: ${d.title}`, cards: [1, 2, 3].map(k => dummyCard({ ...d, title: `${d.title} — ${k}편` })) }))].slice(0, 5);
+  const dummySeries = dummies.map(d => ({ title: `Series: ${bt(d)}`, cards: [dummyCard(d), dummyCard({ ...d, en: d.en && { ...d.en, title: `${d.en.title} — ${U('ep')(2)}` }, title: `${d.title} — ${U('ep')(2)}` }), dummyCard({ ...d, en: d.en && { ...d.en, title: `${d.en.title} — ${U('ep')(3)}` }, title: `${d.title} — ${U('ep')(3)}` })] }));
+  const filler = n => Array.from({ length: n }, (_, i) => ({ id: `more-${i}`, cat: catId, title: `${U('more')} ${i + 1}`, blurb: U('moreBlurb') }));
+  const rows = [...series, ...dummySeries, ...filler(5).map(d => ({ title: `Series: ${d.title}`, cards: [1, 2, 3].map(k => dummyCard({ ...d, en: undefined, title: `${d.title} — ${U('ep')(k)}` })) }))].slice(0, 5);
   const lists = [
-    ...books.map(b => ({ title: b.title, items: b.data.sections.map(s => `<a href="#/b/${b.id}?c=${s.id}">${esc(s.title)}</a>`) })),
-    ...dummies.map(d => ({ title: d.title, items: ['1편', '2편', '3편'].map(x => `<a href="#/soon/${d.id}" class="is-dummy">${x} · 준비 중</a>`) })),
-    { title: 'All stories', items: [...BOOKS.map(b => `<a href="#/b/${b.id}">${esc(b.title)}</a>`), ...DUMMIES.map(d => `<a href="#/soon/${d.id}" class="is-dummy">${esc(d.title)}</a>`)] },
+    ...books.map(b => ({ title: bt(b), items: secsOf(b.data).map(s => `<a href="#/b/${b.id}?c=${s.id}">${esc(s.title)}</a>`) })),
+    ...dummies.map(d => ({ title: bt(d), items: [1, 2, 3].map(x => `<a href="#/soon/${d.id}" class="is-dummy">${U('ep')(x)} · ${U('soon')}</a>`) })),
+    { title: 'All stories', items: [...BOOKS.map(b => `<a href="#/b/${b.id}">${esc(bt(b))}</a>`), ...DUMMIES.map(d => `<a href="#/soon/${d.id}" class="is-dummy">${esc(bt(d))}</a>`)] },
   ];
-  while (lists.length < 8) lists.splice(lists.length - 1, 0, { title: `읽을거리 ${lists.length}`, items: ['준비 중'].map(x => `<a href="#/c/all" class="is-dummy">${x}</a>`) });
+  while (lists.length < 8) lists.splice(lists.length - 1, 0, { title: `${U('reads')} ${lists.length}`, items: [U('soon')].map(x => `<a href="#/c/all" class="is-dummy">${x}</a>`) });
   lists.splice(0, lists.length - 8);
   app.innerHTML = `
   <div class="pal">
@@ -135,13 +179,13 @@ async function renderCategory(catId) {
 function renderSoon(id) {
   const d = DUMMIES.find(x => x.id === id);
   topNav(d?.cat);
-  app.innerHTML = `<div class="pal"><h1 class="pal-h1">${esc(d ? d.title : '준비 중')}</h1><p class="sg-msg">아직 쓰는 중인 책이에요. <a href="#/c/${d?.cat || 'all'}">목록으로 돌아가기</a></p></div>`;
+  app.innerHTML = `<div class="pal"><h1 class="pal-h1">${esc(d ? bt(d) : U('soon'))}</h1><p class="sg-msg">${U('soonBody')} <a href="#/c/${d?.cat || 'all'}">${U('back')}</a></p></div>`;
 }
 
 /* ── 리더 ───────────────────────────────────────────── */
 const fmt = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
 const MARKS = ['①', '②', '③', '④'];
-const SUBS = [['all', '전체'], ['12', '1·2과목'], ['3', '3과목']];
+const SUBS = () => [['all', U('subAll')], ['12', U('sub12')], ['3', U('sub3')]];
 const state = { cardSub: 'all', cardPos: 0, cardFlip: false, hideDone: false, order: null, quizSub: 'all', quizPos: 0, picked: {} };
 
 async function renderReader(bookId, q) {
@@ -149,26 +193,27 @@ async function renderReader(bookId, q) {
   if (!meta) return go('#/', true);
   topNav(meta.cat);
   const data = await loadBook(bookId);
-  const { sections } = data;
-  const tabs = [['read', '본문'], ...(data.cards.length ? [['cards', '암기 카드']] : []), ...(data.quiz.length ? [['quiz', '문제']] : [])];
+  const sections = secsOf(data);
+  const noEn = LANG === 'en' && !(data.sectionsEn && data.sectionsEn.length);
+  const tabs = [['read', U('tabRead')], ...(data.cards.length ? [['cards', U('tabCards')]] : []), ...(data.quiz.length ? [['quiz', U('tabQuiz')]] : [])];
   const tab = tabs.some(t => t[0] === q.get('t')) ? q.get('t') : 'read';
   const cid = q.get('c') || ls.get(`study-last-${bookId}`, sections[0].id);
   const idx = Math.max(0, sections.findIndex(s => s.id === cid));
   const sec = sections[idx];
   const font = ls.get('study-font', 1);
-  document.title = `${meta.title} — Raw Cut IX`;
+  document.title = `${bt(meta)} — Raw Cut IX`;
 
   const head = `
   <header class="sg-head">
     <div class="sg-head-row">
       <a class="sg-back" href="#/c/${meta.cat}">← ${catOf(meta.cat).label}</a>
       <div class="sg-head-tools">
-        <select class="sg-pick" id="pick" aria-label="책 바꾸기">${BOOKS.map(b => `<option value="${b.id}" ${b.id === bookId ? 'selected' : ''}>${esc(b.title)}</option>`).join('')}</select>
-        <div class="sg-font" aria-label="글자 크기"><button type="button" data-font="-1" ${font === 0 ? 'disabled' : ''} aria-label="글자 작게">가</button><button type="button" data-font="1" ${font === 2 ? 'disabled' : ''} aria-label="글자 크게">가<sup>+</sup></button></div>
+        <select class="sg-pick" id="pick" aria-label="${U('swap')}">${BOOKS.map(b => `<option value="${b.id}" ${b.id === bookId ? 'selected' : ''}>${esc(bt(b))}</option>`).join('')}</select>
+        <div class="sg-font" aria-label="${U('fontSize')}"><button type="button" data-font="-1" ${font === 0 ? 'disabled' : ''} aria-label="${U('fontSm')}">${LANG === 'en' ? 'A' : '가'}</button><button type="button" data-font="1" ${font === 2 ? 'disabled' : ''} aria-label="${U('fontLg')}">${LANG === 'en' ? 'A' : '가'}<sup>+</sup></button></div>
       </div>
     </div>
     <p class="sg-eyebrow">${catOf(meta.cat).label} · ${meta.date}</p>
-    <h1 class="sg-title">${esc(meta.title)}</h1>
+    <h1 class="sg-title">${esc(bt(meta))}</h1>${noEn ? `<p class="sg-notice">${U('noEn')}</p>` : ''}
     ${tabs.length > 1 ? `<div class="sg-seg sg-tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" class="${k === tab ? 'is-on' : ''}" aria-selected="${k === tab}">${l}</button>`).join('')}</div>` : ''}
   </header>`;
 
@@ -184,15 +229,15 @@ async function renderReader(bookId, q) {
     const chips = sections.map((s, i) => `<button type="button" data-ch="${s.id}" class="${s.id === sec.id ? 'is-on' : ''}"><b>${i + 1}</b>${esc(s.title)}</button>`).join('');
     const prev = sections[idx - 1], next = sections[idx + 1];
     body = `<div class="sg-reader">
-      <nav class="sg-toc" aria-label="장 목록">${toc}</nav>
+      <nav class="sg-toc" aria-label="${U('toc')}">${toc}</nav>
       <div class="sg-main">
         <div class="sg-chips" id="chips">${chips}</div>
         <div class="sg-readbar" aria-hidden="true"><span style="width:${((idx + 1) / sections.length) * 100}%"></span></div>
         <article class="sg-body sg-font-${font}" id="body">${sec.html}</article>
         <div class="sg-pager">
-          <button type="button" class="sg-btn" ${prev ? `data-ch="${prev.id}"` : 'disabled'}>← ${prev ? esc(prev.title) : '처음'}</button>
+          <button type="button" class="sg-btn" ${prev ? `data-ch="${prev.id}"` : 'disabled'}>← ${prev ? esc(prev.title) : U('first')}</button>
           <span class="sg-pager-pos">${idx + 1} / ${sections.length}</span>
-          <button type="button" class="sg-btn sg-btn--fill" ${next ? `data-ch="${next.id}"` : 'disabled'}>${next ? esc(next.title) : '끝'} →</button>
+          <button type="button" class="sg-btn sg-btn--fill" ${next ? `data-ch="${next.id}"` : 'disabled'}>${next ? esc(next.title) : U('last')} →</button>
         </div>
       </div></div>`;
   } else if (tab === 'cards') body = cardsView(data.cards);
@@ -263,7 +308,7 @@ function cardList(cards) {
   return { done, list: state.order.filter(i => (state.cardSub === 'all' || String(cards[i].sub) === state.cardSub) && !(state.hideDone && done.has(i))) };
 }
 function segHtml(cur, attr) {
-  return `<div class="sg-seg sg-seg--sm">${SUBS.map(([k, l]) => `<button type="button" ${attr}="${k}" class="${k === cur ? 'is-on' : ''}">${l}</button>`).join('')}</div>`;
+  return `<div class="sg-seg sg-seg--sm">${SUBS().map(([k, l]) => `<button type="button" ${attr}="${k}" class="${k === cur ? 'is-on' : ''}">${l}</button>`).join('')}</div>`;
 }
 function cardsView(cards) {
   const { done, list } = cardList(cards);
@@ -273,18 +318,18 @@ function cardsView(cards) {
   const cur = list[state.cardPos];
   const c = cards[cur];
   return `<div class="sg-tool">
-    <div class="sg-tool-bar">${segHtml(state.cardSub, 'data-csub')}<div class="sg-tool-actions"><button type="button" class="sg-btn" id="shuffle">섞기</button><button type="button" class="sg-btn ${state.hideDone ? 'sg-btn--fill' : ''}" id="hide">외운 카드 숨기기</button></div></div>
+    <div class="sg-tool-bar">${segHtml(state.cardSub, 'data-csub')}<div class="sg-tool-actions"><button type="button" class="sg-btn" id="shuffle">${U('shuffle')}</button><button type="button" class="sg-btn ${state.hideDone ? 'sg-btn--fill' : ''}" id="hide">${U('hideDone')}</button></div></div>
     <div class="sg-progress"><span style="width:${subTotal ? (subDone / subTotal) * 100 : 0}%"></span></div>
-    <p class="sg-progress-text">외운 카드 ${subDone} / ${subTotal}</p>
-    ${cur == null ? '<p class="sg-empty">다 외웠어요. 「외운 카드 숨기기」를 끄면 다시 볼 수 있어요.</p>' : `
+    <p class="sg-progress-text">${U('learned')(subDone, subTotal)}</p>
+    ${cur == null ? `<p class="sg-empty">${U('allDone')}</p>` : `
     <button type="button" class="sg-card ${state.cardFlip ? 'is-flip' : ''} ${done.has(cur) ? 'is-done' : ''}" id="card">
-      <span class="sg-card-meta">${cur + 1}번 · ${c.sub === 3 ? '3과목' : '1·2과목'}${done.has(cur) ? ' · 외움' : ''}</span>
+      <span class="sg-card-meta">${U('no')(cur + 1)} · ${c.sub === 3 ? U('sub3') : U('sub12')}${done.has(cur) ? ' · ' + U('memo') : ''}</span>
       <span class="sg-card-text">${esc(state.cardFlip ? c.a : c.q)}</span>
-      <span class="sg-card-hint">${state.cardFlip ? '답' : '눌러서 답 보기 · 옆으로 밀어 넘기기'}</span>
+      <span class="sg-card-hint">${state.cardFlip ? U('ans') : U('tapAnswer')}</span>
     </button>
-    <div class="sg-pager"><button type="button" class="sg-btn" id="cprev" ${state.cardPos === 0 ? 'disabled' : ''}>← 이전</button>
-      <button type="button" class="sg-btn ${done.has(cur) ? '' : 'sg-btn--fill'}" id="cdone">${done.has(cur) ? '다시 볼래요' : '외웠어요'}</button>
-      <button type="button" class="sg-btn" id="cnext" ${state.cardPos >= list.length - 1 ? 'disabled' : ''}>다음 →</button></div>
+    <div class="sg-pager"><button type="button" class="sg-btn" id="cprev" ${state.cardPos === 0 ? 'disabled' : ''}>${U('prev')}</button>
+      <button type="button" class="sg-btn ${done.has(cur) ? '' : 'sg-btn--fill'}" id="cdone">${done.has(cur) ? U('again') : U('gotIt')}</button>
+      <button type="button" class="sg-btn" id="cnext" ${state.cardPos >= list.length - 1 ? 'disabled' : ''}>${U('next')}</button></div>
     <p class="sg-pager-pos sg-center">${state.cardPos + 1} / ${list.length}</p>`}
   </div>`;
 }
@@ -319,13 +364,13 @@ function quizView(quiz) {
   const right = solved.filter(q => state.picked[q.i] === q.ans).length;
   const ch = cur ? state.picked[cur.i] : null;
   return `<div class="sg-tool">
-    <div class="sg-tool-bar">${segHtml(state.quizSub, 'data-qsub')}<div class="sg-tool-actions"><button type="button" class="sg-btn" id="qreset">처음부터</button></div></div>
+    <div class="sg-tool-bar">${segHtml(state.quizSub, 'data-qsub')}<div class="sg-tool-actions"><button type="button" class="sg-btn" id="qreset">${U('restart')}</button></div></div>
     <div class="sg-progress"><span style="width:${list.length ? (solved.length / list.length) * 100 : 0}%"></span></div>
-    <p class="sg-progress-text">${solved.length} / ${list.length} 풀었어요 · 맞힌 문제 ${right}</p>
-    ${cur ? `<div class="sg-q"><div class="sg-q-head">Q${state.quizPos + 1} · ${cur.sub === 3 ? '3과목' : '1·2과목'}</div><p class="sg-q-text">${esc(cur.q)}</p>
+    <p class="sg-progress-text">${U('solved')(solved.length, list.length, right)}</p>
+    ${cur ? `<div class="sg-q"><div class="sg-q-head">Q${state.quizPos + 1} · ${cur.sub === 3 ? U('sub3') : U('sub12')}</div><p class="sg-q-text">${esc(cur.q)}</p>
       <div class="sg-q-ops">${cur.ops.map((o, k) => `<button type="button" data-op="${k}" ${ch != null ? 'disabled' : ''} class="${ch != null ? (k === cur.ans ? 'is-right' : k === ch ? 'is-wrong' : '') : ''}"><b>${MARKS[k]}</b> ${esc(o)}</button>`).join('')}</div>
-      ${ch != null ? `<div class="sg-q-ex"><b>${ch === cur.ans ? '정답이에요' : `정답은 ${MARKS[cur.ans]}`}</b> — ${esc(cur.ex)} <a href="https://youtu.be/${cur.vid}?t=${cur.t}" target="_blank" rel="noopener noreferrer">▶ ${fmt(cur.t)}</a></div>` : ''}</div>` : ''}
-    <div class="sg-pager"><button type="button" class="sg-btn" id="qprev" ${state.quizPos === 0 ? 'disabled' : ''}>← 이전</button><span class="sg-pager-pos">${state.quizPos + 1} / ${list.length}</span><button type="button" class="sg-btn sg-btn--fill" id="qnext" ${state.quizPos >= list.length - 1 ? 'disabled' : ''}>다음 →</button></div>
+      ${ch != null ? `<div class="sg-q-ex"><b>${ch === cur.ans ? U('correct') : U('answerIs')(MARKS[cur.ans])}</b> — ${esc(cur.ex)} <a href="https://youtu.be/${cur.vid}?t=${cur.t}" target="_blank" rel="noopener noreferrer">▶ ${fmt(cur.t)}</a></div>` : ''}</div>` : ''}
+    <div class="sg-pager"><button type="button" class="sg-btn" id="qprev" ${state.quizPos === 0 ? 'disabled' : ''}>${U('prev')}</button><span class="sg-pager-pos">${state.quizPos + 1} / ${list.length}</span><button type="button" class="sg-btn sg-btn--fill" id="qnext" ${state.quizPos >= list.length - 1 ? 'disabled' : ''}>다음 →</button></div>
   </div>`;
 }
 function wireQuiz(quiz) {
@@ -346,9 +391,12 @@ async function route() {
     else if (parts[0] === 'b') await renderReader(parts[1], q);
     else await renderHome();
   } catch (err) {
-    app.innerHTML = `<p class="sg-msg">불러오지 못했어요. 새로고침해 주세요. (${esc(err.message)})</p>`;
+    app.innerHTML = `<p class="sg-msg">${U('fail')} (${esc(err.message)})</p>`;
   }
 }
+document.querySelectorAll('[data-lang]').forEach(b => (b.onclick = () => setLang(b.dataset.lang)));
+document.documentElement.lang = LANG;
+syncChrome();
 window.addEventListener('popstate', route);
 window.addEventListener('hashchange', route);
 route();
