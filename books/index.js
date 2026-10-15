@@ -5,6 +5,19 @@ export const CATEGORIES = [
   { id: 'cert', label: 'Certification', ko: '자격증', desc: '시험 범위를 그림과 문제로 정리' },
 ];
 
+// 아직 안 쓴 책 — 카드 자리만 채우는 더미(누르면 「준비 중」).
+export const DUMMIES = [
+  { id: 'dbt', cat: 'data', title: 'dbt로 데이터 모델 만들기', blurb: 'SQL 파일 몇 개로 매일 도는 데이터 표를 만드는 법.', date: '준비 중' },
+  { id: 'airflow', cat: 'data', title: 'Airflow, 작업 순서 정하기', blurb: '「A 끝나면 B」를 매일 새벽 자동으로.', date: '준비 중' },
+  { id: 'bq', cat: 'data', title: 'BigQuery 비용 안 터지게 쓰기', blurb: '파티션·클러스터로 스캔량 줄이기.', date: '준비 중' },
+  { id: 'k8s', cat: 'infra', title: 'Kubernetes, 컨테이너 배차 시스템', blurb: '서버가 죽어도 알아서 다시 띄우는 원리.', date: '준비 중' },
+  { id: 'iam', cat: 'infra', title: '클라우드 권한(IAM) 한 장 정리', blurb: '누가 무엇을 할 수 있는지 최소 권한으로.', date: '준비 중' },
+  { id: 'cicd', cat: 'infra', title: 'CI/CD, 버튼 없이 배포하기', blurb: 'push 하면 테스트·빌드·배포가 이어지는 길.', date: '준비 중' },
+  { id: 'sqld', cat: 'cert', title: 'SQLD 한 권 가이드북', blurb: '조인·서브쿼리·윈도우 함수를 그림으로.', date: '준비 중' },
+  { id: 'jungbo', cat: 'cert', title: '정보처리기사 실기 요약', blurb: '자주 나오는 코드 읽기 문제 모음.', date: '준비 중' },
+  { id: 'aws-saa', cat: 'cert', title: 'AWS SAA 핵심 서비스 지도', blurb: '시험에 나오는 서비스만 골라 한 장으로.', date: '준비 중' },
+];
+
 export const BOOKS = [
   {
     id: 'pl',

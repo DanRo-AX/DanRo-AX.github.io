@@ -1,4 +1,4 @@
-# Danro Study
+# Raw Cut IX
 
 개인 공부 서재 — 데이터 엔지니어링·인프라·자격증 가이드북. 빌드 없는 정적 사이트(GitHub Pages).
 

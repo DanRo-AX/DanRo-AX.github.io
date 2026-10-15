@@ -1,9 +1,9 @@
-// Danro Study — 빌드 없는 정적 SPA(GitHub Pages). 해시 라우팅:
+// Raw Cut IX — 빌드 없는 정적 SPA(GitHub Pages). 해시 라우팅:
 //   #/                 첫 화면(소개 + 카테고리 목록)
 //   #/c/<카테고리>      카테고리: 최근 글 카드 + 장(章) 시리즈 카드
 //   #/b/<책>?c=<장>&t=read|cards|quiz   리더
 // 책 본문 html 은 직접 작성한 정적 학습 노트라 그대로 렌더한다.
-import { BOOKS, CATEGORIES } from './books/index.js';
+import { BOOKS, CATEGORIES, DUMMIES } from './books/index.js';
 
 const app = document.getElementById('app');
 const cache = {};
@@ -36,14 +36,14 @@ function topNav(active) {
 /* ── 첫 화면 ─────────────────────────────────────────── */
 async function renderHome() {
   topNav(null);
-  document.title = 'Danro Study';
+  document.title = 'Raw Cut IX';
   const books = await Promise.all(BOOKS.map(async b => ({ ...b, data: await loadBook(b.id) })));
   const feat = books[0];
   app.innerHTML = `
   <section class="home">
     <div class="home-art" aria-hidden="true">${thumb(firstSvg(feat.data.sections.map(s => s.html).join('')))}</div>
     <div class="home-side">
-      <p class="home-intro">Danro Study는 데이터와 인프라를 <b>처음 배우는 사람의 눈높이</b>로 다시 쓴 개인 공부 서재예요. 구조를 그림으로 먼저 보고, 왜 필요한지 이해한 다음, 코드와 AI에게 시키는 법으로 넘어가요.</p>
+      <p class="home-intro">Raw Cut IX는 데이터와 인프라를 <b>처음 배우는 사람의 눈높이</b>로 다시 쓴 개인 공부 서재예요. 구조를 그림으로 먼저 보고, 왜 필요한지 이해한 다음, 코드와 AI에게 시키는 법으로 넘어가요.</p>
       <ul class="cat-list">
         ${CATEGORIES.map(c => `<li><a href="#/c/${c.id}"><span>${c.label}<small>${c.ko}</small></span><span aria-hidden="true">→</span></a></li>`).join('')}
         <li><a href="#/c/all"><span>All Stories<small>전체 글</small></span><span aria-hidden="true">→</span></a></li>
@@ -67,7 +67,7 @@ function storyCard(b) {
     <span class="story-cat">${c.label}</span>
     <h3>${esc(b.title)}</h3>
     <p>${esc(b.blurb)}</p>
-    <span class="story-meta">Danro · ${b.date} · ${b.data.sections.length}장 · ${b.minutes}분</span>
+    <span class="story-meta">Raw Cut IX · ${b.date} · ${b.data.sections.length}장 · ${b.minutes}분</span>
   </a>`;
 }
 function chapterCard(b, s, i) {
@@ -80,19 +80,67 @@ function chapterCard(b, s, i) {
   </a>`;
 }
 
-/* ── 카테고리 ────────────────────────────────────────── */
+/* ── 카테고리 — blog.palantir.com/subpage/tech 배치(1440px 실측)를 그대로 ──
+   상단 바 57 · 블로그명 줄(20/500) · 큰 제목 42/52 · 카드 섹션(제목 48 + 카드 283, 간격 444)
+   · 아래 목록형 섹션(간격 161) · 콘텐츠 폭 1192 */
+function dummyCard(d) {
+  return `<a class="pcard is-dummy" href="#/soon/${d.id}">
+    <div class="pcard-img"><div class="thumb-blank"></div></div>
+    <h3>${esc(d.title)}</h3><p>${esc(d.blurb)}</p>
+    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · 준비 중</span></a>`;
+}
+function bookCard(b) {
+  const first = b.data.sections.find(s => /<svg/.test(s.html));
+  return `<a class="pcard" href="#/b/${b.id}">
+    <div class="pcard-img">${first ? `<div class="sg-body thumb-svg">${firstSvg(first.html)}</div>` : '<div class="thumb-blank"></div>'}</div>
+    <h3>${esc(b.title)}</h3><p>${esc(b.blurb)}</p>
+    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · ${b.date} · ${b.minutes} min read</span></a>`;
+}
+function chapterPcard(b, s, i) {
+  const svg = firstSvg(s.html);
+  return `<a class="pcard" href="#/b/${b.id}?c=${s.id}">
+    <div class="pcard-img">${svg ? `<div class="sg-body thumb-svg">${svg}</div>` : `<div class="thumb-num">${String(i + 1).padStart(2, '0')}</div>`}</div>
+    <h3>${esc(s.title)}</h3><p>${esc(s.part)} · ${esc(s.sub)}</p>
+    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · ${b.date}</span></a>`;
+}
+const pad3 = (items, fill) => [...items, ...fill].slice(0, 3);
+
 async function renderCategory(catId) {
   topNav(catId);
-  const cat = catId === 'all' ? { label: 'All Stories', ko: '전체 글', desc: '서재의 모든 책' } : catOf(catId);
+  const cat = catId === 'all' ? { label: 'All Stories', ko: '전체 글' } : catOf(catId);
   if (!cat) return go('#/', true);
-  document.title = `${cat.label} — Danro Study`;
+  document.title = `${cat.label} — Raw Cut IX`;
   const list = BOOKS.filter(b => catId === 'all' || b.cat === catId);
   const books = await Promise.all(list.map(async b => ({ ...b, data: await loadBook(b.id) })));
+  const dummies = DUMMIES.filter(d => catId === 'all' || d.cat === catId);
+  const latest = pad3(books.map(bookCard), dummies.map(dummyCard));
+  const series = books.map(b => ({ title: `Series: ${b.title}`, cards: b.data.sections.slice(0, 3).map((s, i) => chapterPcard(b, s, i)) }));
+  // 시리즈가 모자라면 더미 시리즈로 카드 섹션 수를 원본과 같게(Latest + 5)
+  const dummySeries = dummies.map(d => ({ title: `Series: ${d.title}`, cards: [dummyCard(d), dummyCard({ ...d, title: `${d.title} — 2편` }), dummyCard({ ...d, title: `${d.title} — 3편` })] }));
+  const filler = n => Array.from({ length: n }, (_, i) => ({ id: `more-${i}`, cat: catId, title: `다음 시리즈 ${i + 1}`, blurb: '곧 채울 자리예요.' }));
+  const rows = [...series, ...dummySeries, ...filler(5).map(d => ({ title: `Series: ${d.title}`, cards: [1, 2, 3].map(k => dummyCard({ ...d, title: `${d.title} — ${k}편` })) }))].slice(0, 5);
+  const lists = [
+    ...books.map(b => ({ title: b.title, items: b.data.sections.map(s => `<a href="#/b/${b.id}?c=${s.id}">${esc(s.title)}</a>`) })),
+    ...dummies.map(d => ({ title: d.title, items: ['1편', '2편', '3편'].map(x => `<a href="#/soon/${d.id}" class="is-dummy">${x} · 준비 중</a>`) })),
+    { title: 'All stories', items: [...BOOKS.map(b => `<a href="#/b/${b.id}">${esc(b.title)}</a>`), ...DUMMIES.map(d => `<a href="#/soon/${d.id}" class="is-dummy">${esc(d.title)}</a>`)] },
+  ];
+  while (lists.length < 8) lists.splice(lists.length - 1, 0, { title: `읽을거리 ${lists.length}`, items: ['준비 중'].map(x => `<a href="#/c/all" class="is-dummy">${x}</a>`) });
+  lists.splice(0, lists.length - 8);
   app.innerHTML = `
-  <section class="cat-head"><h1>${cat.label}</h1><p>${cat.ko} · ${cat.desc}</p></section>
-  <section class="band"><h2 class="band-title">Latest Stories</h2><div class="cards">${books.map(storyCard).join('')}</div></section>
-  ${books.map(b => `<section class="band"><h2 class="band-title">Series: ${esc(b.title)}</h2>
-     <div class="cards cards--row">${b.data.sections.map((s, i) => chapterCard(b, s, i)).join('')}</div></section>`).join('')}`;
+  <div class="pal">
+    <div class="pal-sub"><a class="pal-blog" href="#/">Raw Cut IX</a>
+      <nav class="pal-tabs">${CATEGORIES.map(c => `<a href="#/c/${c.id}" class="${c.id === catId ? 'is-on' : ''}">${c.label}</a>`).join('')}<a href="#/c/all" class="${catId === 'all' ? 'is-on' : ''}">All Stories</a></nav></div>
+    <h1 class="pal-h1">${cat.label}</h1>
+    <section class="pal-sec"><h2 class="pal-sec-t">Latest Stories</h2><div class="pal-row">${latest.join('')}</div></section>
+    ${rows.map(r => `<section class="pal-sec"><h2 class="pal-sec-t">${esc(r.title)}</h2><div class="pal-row">${r.cards.join('')}</div></section>`).join('')}
+    ${lists.map(l => `<section class="pal-list"><h2 class="pal-sec-t">${esc(l.title)}</h2><div class="pal-links">${l.items.join('')}</div></section>`).join('')}
+  </div>`;
+}
+
+function renderSoon(id) {
+  const d = DUMMIES.find(x => x.id === id);
+  topNav(d?.cat);
+  app.innerHTML = `<div class="pal"><h1 class="pal-h1">${esc(d ? d.title : '준비 중')}</h1><p class="sg-msg">아직 쓰는 중인 책이에요. <a href="#/c/${d?.cat || 'all'}">목록으로 돌아가기</a></p></div>`;
 }
 
 /* ── 리더 ───────────────────────────────────────────── */
@@ -113,7 +161,7 @@ async function renderReader(bookId, q) {
   const idx = Math.max(0, sections.findIndex(s => s.id === cid));
   const sec = sections[idx];
   const font = ls.get('study-font', 1);
-  document.title = `${meta.title} — Danro Study`;
+  document.title = `${meta.title} — Raw Cut IX`;
 
   const head = `
   <header class="sg-head">
@@ -299,6 +347,7 @@ async function route() {
   const { parts, q } = parseHash();
   try {
     if (parts[0] === 'c') await renderCategory(parts[1]);
+    else if (parts[0] === 'soon') renderSoon(parts[1]);
     else if (parts[0] === 'b') await renderReader(parts[1], q);
     else await renderHome();
   } catch (err) {
