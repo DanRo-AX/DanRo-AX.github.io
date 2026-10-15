@@ -1592,7 +1592,7 @@ button, select { font: inherit; }
 .pal-sec { margin-top: 40px; padding-bottom: 56px; border-bottom: 1px solid var(--line); }
 .pal-sec + .pal-sec { margin-top: 56px; }
 .pal-sec-t { margin: 0 0 24px; font-size: 20px; line-height: 24px; font-weight: 500; color: var(--color-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pal-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; height: 283px; }
+.pal-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 24px; }
 .pcard { display: flex; flex-direction: column; height: 283px; overflow: hidden; text-decoration: none; color: inherit; min-width: 0; }
 .pcard-img { height: 160px; flex: none; background: #121212; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .pcard-img .thumb-svg { padding: 4% 6%; }
@@ -1622,3 +1622,25 @@ button, select { font: inherit; }
 
 .sg-toc { top: 72px; max-height: calc(100vh - 96px); }
 @media (max-width: 900px) { .sg-chips { top: 56px; } }
+
+/* ── 카드: ax-blog(Raw Cut) scard 그대로 ── */
+:root { --display: "DM Serif Display", "Noto Serif KR", "Apple SD Gothic Neo", serif; --tx: #242424; --mute: #6b6b6b; --chip-bg: #f2f2f2;
+  --on-art: #ffffff; --scard-chip: rgba(255, 255, 255, .88); --scard-chip-fg: #111111; }
+@media (prefers-color-scheme: dark) { :root { --tx: #efefef; --mute: #9b9b9b; --chip-bg: #232323; } }
+.scard { min-width: 0; }
+.scard > a { display: flex; flex-direction: column; height: 100%; color: var(--tx); text-decoration: none; }
+.scard-art { position: relative; aspect-ratio: 1.9 / 1; border-radius: 0; overflow: hidden; background: var(--chip-bg); }
+.scard-img, .scard-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 240ms ease; }
+.scard-tex { position: absolute; inset: 0; background-position: center; background-size: cover; }
+.scard-chip { position: absolute; left: 12px; top: 12px; max-width: calc(100% - 24px); background: var(--scard-chip); color: var(--scard-chip-fg); font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scard-kw { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; position: absolute; left: 14px; right: 14px; bottom: 12px; color: var(--on-art); font-family: var(--display); font-weight: 400; font-size: 18px; letter-spacing: -.02em; line-height: 1.1; overflow-wrap: anywhere; }
+.scard > a:hover .scard-img, .scard > a:hover .scard-media { transform: scale(1.03); }
+.scard-body { display: flex; flex-direction: column; flex: 1; }
+.scard-body h3 { font-family: var(--display); font-size: 21px; line-height: 1.35; letter-spacing: -.005em; margin: 14px 0 8px; font-weight: 300; color: var(--tx); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; text-decoration-thickness: 1px; transition: text-decoration-color 240ms ease; }
+.scard > a:hover h3 { text-decoration-color: currentColor; }
+.scard-meta { font-size: 12px; font-weight: 400; color: var(--mute); margin-top: auto; }
+@media (prefers-reduced-motion: reduce) { .scard-img, .scard-media, .scard-body h3 { transition: none; } .scard > a:hover .scard-media { transform: none; } }
+@media (max-width: 900px) {
+  .pal-row .scard { flex: 0 0 78%; scroll-snap-align: start; }
+  .scard-body h3 { font-size: 19px; }
+}

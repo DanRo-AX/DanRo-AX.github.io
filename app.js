@@ -4,6 +4,7 @@
 //   #/b/<책>?c=<장>&t=read|cards|quiz   리더
 // 책 본문 html 은 직접 작성한 정적 학습 노트라 그대로 렌더한다.
 import { BOOKS, CATEGORIES, DUMMIES } from './books/index.js';
+import { cardGradient, cardTexture } from './cardArt.js';
 
 const app = document.getElementById('app');
 const cache = {};
@@ -52,7 +53,7 @@ async function renderHome() {
   </section>
   <section class="band">
     <h2 class="band-title">Latest Stories</h2>
-    <div class="cards">${books.map(storyCard).join('')}</div>
+    <div class="pal-row">${books.map(bookCard).join('')}</div>
   </section>`;
 }
 
@@ -83,26 +84,20 @@ function chapterCard(b, s, i) {
 /* ── 카테고리 — blog.palantir.com/subpage/tech 배치(1440px 실측)를 그대로 ──
    상단 바 57 · 블로그명 줄(20/500) · 큰 제목 42/52 · 카드 섹션(제목 48 + 카드 283, 간격 444)
    · 아래 목록형 섹션(간격 161) · 콘텐츠 폭 1192 */
-function dummyCard(d) {
-  return `<a class="pcard is-dummy" href="#/soon/${d.id}">
-    <div class="pcard-img"><div class="thumb-blank"></div></div>
-    <h3>${esc(d.title)}</h3><p>${esc(d.blurb)}</p>
-    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · 준비 중</span></a>`;
+/* 카드 — ~/repos/ax-blog(Raw Cut) 의 scard 그대로: 1.9:1 직각 그림(제목 해시 그라데이션 + 결) · 큰 키워드 · 분류 칩 · 세리프 제목 · 메타 */
+function scard({ href, seed, kw, chip, title, meta, dummy }) {
+  return `<article class="scard${dummy ? ' is-dummy' : ''}"><a href="${href}" aria-label="${esc(title)} 읽기">
+    <div class="scard-art" aria-hidden="true">
+      <div class="scard-media" style="background: ${cardGradient(seed, 'deep')};"><div class="scard-tex" style="background-image: ${cardTexture(seed)};"></div>
+      <span class="scard-kw">${esc(kw)}</span></div>
+      <span class="scard-chip">${esc(chip)}</span>
+    </div>
+    <div class="scard-body"><h3>${esc(title)}</h3><span class="scard-meta">${esc(meta)}</span></div>
+  </a></article>`;
 }
-function bookCard(b) {
-  const first = b.data.sections.find(s => /<svg/.test(s.html));
-  return `<a class="pcard" href="#/b/${b.id}">
-    <div class="pcard-img">${first ? `<div class="sg-body thumb-svg">${firstSvg(first.html)}</div>` : '<div class="thumb-blank"></div>'}</div>
-    <h3>${esc(b.title)}</h3><p>${esc(b.blurb)}</p>
-    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · ${b.date} · ${b.minutes} min read</span></a>`;
-}
-function chapterPcard(b, s, i) {
-  const svg = firstSvg(s.html);
-  return `<a class="pcard" href="#/b/${b.id}?c=${s.id}">
-    <div class="pcard-img">${svg ? `<div class="sg-body thumb-svg">${svg}</div>` : `<div class="thumb-num">${String(i + 1).padStart(2, '0')}</div>`}</div>
-    <h3>${esc(s.title)}</h3><p>${esc(s.part)} · ${esc(s.sub)}</p>
-    <span class="pcard-meta"><i class="pcard-av"></i>Raw Cut IX · ${b.date}</span></a>`;
-}
+const dummyCard = d => scard({ href: `#/soon/${d.id}`, seed: d.title, kw: d.kw || d.title, chip: catOf(d.cat)?.label || 'Coming soon', title: d.title, meta: '준비 중', dummy: true });
+const bookCard = b => scard({ href: `#/b/${b.id}`, seed: b.title, kw: b.kw, chip: catOf(b.cat).label, title: b.title, meta: `${catOf(b.cat).label} · ${b.date} · ${b.minutes}분` });
+const chapterPcard = (b, s) => scard({ href: `#/b/${b.id}?c=${s.id}`, seed: `${b.id}:${s.title}`, kw: s.title.split(/ — |, /)[0], chip: s.part, title: s.title, meta: `${b.kw} · ${s.sub}` });
 const pad3 = (items, fill) => [...items, ...fill].slice(0, 3);
 
 async function renderCategory(catId) {
@@ -114,7 +109,7 @@ async function renderCategory(catId) {
   const books = await Promise.all(list.map(async b => ({ ...b, data: await loadBook(b.id) })));
   const dummies = DUMMIES.filter(d => catId === 'all' || d.cat === catId);
   const latest = pad3(books.map(bookCard), dummies.map(dummyCard));
-  const series = books.map(b => ({ title: `Series: ${b.title}`, cards: b.data.sections.slice(0, 3).map((s, i) => chapterPcard(b, s, i)) }));
+  const series = books.map(b => ({ title: `Series: ${b.title}`, cards: b.data.sections.slice(0, 3).map(s => chapterPcard(b, s)) }));
   // 시리즈가 모자라면 더미 시리즈로 카드 섹션 수를 원본과 같게(Latest + 5)
   const dummySeries = dummies.map(d => ({ title: `Series: ${d.title}`, cards: [dummyCard(d), dummyCard({ ...d, title: `${d.title} — 2편` }), dummyCard({ ...d, title: `${d.title} — 3편` })] }));
   const filler = n => Array.from({ length: n }, (_, i) => ({ id: `more-${i}`, cat: catId, title: `다음 시리즈 ${i + 1}`, blurb: '곧 채울 자리예요.' }));
